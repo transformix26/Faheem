@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Bell, Plus, Search, LogOut, Settings, ChevronDown, Globe, Menu, X } from 'lucide-react'
+import { Bell, Plus, Search, LogOut, Settings, ChevronDown, Globe, Menu, X, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useLanguage } from '@/lib/language-context'
 
@@ -69,7 +69,7 @@ export function Navbar() {
             href="/"
             className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            <img src="/logo.png" alt={t('brand.name')} className="w-8 h-8 rounded" />
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" />
             <span className="text-base sm:text-lg font-bold text-primary hidden sm:inline whitespace-nowrap">
               {t('brand.name')}
             </span>
@@ -231,11 +231,11 @@ export function Navbar() {
                     </div>
                     <div className="p-2 space-y-1">
                       <Link
-                        href="/dashboard/settings"
+                        href="/dashboard/profile"
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                       >
-                        <Settings className="w-4 h-4" />
-                        {t('nav.settings')}
+                        <UserIcon className="w-4 h-4" />
+                        {t('nav.profile')}
                       </Link>
                       <button
                         onClick={handleLogout}
@@ -269,7 +269,7 @@ export function Navbar() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-full left-0 right-0 bg-white border-b border-border shadow-lg p-4 md:hidden flex flex-col gap-4 z-50"
+            className="absolute top-full left-0 right-0 bg-white border-b border-border shadow-lg p-4 md:hidden flex flex-col gap-4 z-50 max-h-[80vh] overflow-y-auto"
           >
             {/* Mobile Navigation Links */}
             <div className="flex flex-col gap-2">
@@ -285,8 +285,8 @@ export function Navbar() {
                 <>
                   <div className="h-px bg-border my-2" />
                   <div className="px-4 text-xs text-muted-foreground">{user?.email}</div>
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 hover:bg-muted rounded-lg">{t('dashboard.title')}</Link>
-                  <Link href="/dashboard/settings" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 hover:bg-muted rounded-lg">{t('nav.settings')}</Link>
+                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 hover:bg-muted rounded-lg">{t('nav.dashboard')}</Link>
+                  <Link href="/dashboard/profile" onClick={() => setMobileMenuOpen(false)} className="px-4 py-2 hover:bg-muted rounded-lg">{t('nav.profile')}</Link>
                   <button onClick={handleLogout} className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-start flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
                     {t('nav.logout')}

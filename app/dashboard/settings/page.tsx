@@ -30,25 +30,51 @@ import {
 
 export default function SettingsPage() {
   const { language, t } = useLanguage()
-  const { activeBot } = useBotContext()
+  const { activeBot, updateBot, deleteBot } = useBotContext()
   const isRTL = language === 'ar'
-  
+
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [botSettings, setBotSettings] = useState({
     name: activeBot?.name || '',
-    description: activeBot?.description || '',
-    instructions: activeBot?.instructions || '',
     isActive: activeBot?.status === 'active',
     autoReply: true,
     collectLeads: true,
     handoffEnabled: true,
   })
 
+  // Sync settings when activeBot changes
+  useState(() => {
+    if (activeBot) {
+      setBotSettings({
+        name: activeBot.name,
+        isActive: activeBot.status === 'active',
+        autoReply: true,
+        collectLeads: true,
+        handoffEnabled: true,
+      })
+    }
+  })
+
   const handleSave = () => {
+    if (activeBot) {
+      updateBot(activeBot.id, {
+        name: botSettings.name,
+        status: botSettings.isActive ? 'active' : 'inactive',
+        autoReply: botSettings.autoReply,
+        collectLeads: botSettings.collectLeads,
+        handoffEnabled: botSettings.handoffEnabled,
+      })
+    }
     setIsEditing(false)
-    // API call would go here
+  }
+
+  const handleDelete = () => {
+    if (activeBot) {
+      deleteBot(activeBot.id)
+      setShowDeleteDialog(false)
+    }
   }
 
   return (
@@ -59,32 +85,32 @@ export default function SettingsPage() {
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Page Header */}
-      <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className={`text-2xl md:text-3xl font-bold text-foreground mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
             {t('settings.title')}
           </h1>
           <p className={`text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>
-            {activeBot 
+            {activeBot
               ? `${t('settings.manage')} - ${activeBot.name}`
               : t('settings.manage')
             }
           </p>
         </div>
         {activeBot && (
-          <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex gap-2">
             {isEditing ? (
               <>
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   {t('action.cancel')}
                 </Button>
-                <Button onClick={handleSave} className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <Button onClick={handleSave} className="gap-2">
                   <Save className="w-4 h-4" />
                   {t('action.save')}
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)} className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <Button onClick={() => setIsEditing(true)} className="gap-2">
                 <Edit2 className="w-4 h-4" />
                 {t('action.edit')}
               </Button>
@@ -111,7 +137,7 @@ export default function SettingsPage() {
                   {t('channels.bot_name')}
                 </label>
                 {isEditing ? (
-                  <Input 
+                  <Input
                     value={botSettings.name}
                     onChange={(e) => setBotSettings(prev => ({ ...prev, name: e.target.value }))}
                     className={`mt-1.5 ${isRTL ? 'text-right' : ''}`}
@@ -120,46 +146,9 @@ export default function SettingsPage() {
                   <p className={`text-foreground mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>{activeBot.name}</p>
                 )}
               </div>
-              <div>
-                <label className={`text-sm font-medium text-secondary ${isRTL ? 'text-right block' : ''}`}>
-                  {isRTL ? 'الوصف' : 'Description'}
-                </label>
-                {isEditing ? (
-                  <Input 
-                    value={botSettings.description}
-                    onChange={(e) => setBotSettings(prev => ({ ...prev, description: e.target.value }))}
-                    className={`mt-1.5 ${isRTL ? 'text-right' : ''}`}
-                  />
-                ) : (
-                  <p className={`text-foreground mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>{activeBot.description}</p>
-                )}
-              </div>
             </div>
           </motion.div>
 
-          {/* Bot Instructions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-lg border border-border p-6"
-          >
-            <h2 className={`text-lg font-bold text-foreground mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t('settings.bot_instructions')}
-            </h2>
-            {isEditing ? (
-              <Textarea 
-                value={botSettings.instructions}
-                onChange={(e) => setBotSettings(prev => ({ ...prev, instructions: e.target.value }))}
-                className={`min-h-[120px] ${isRTL ? 'text-right' : ''}`}
-                placeholder={isRTL ? 'أدخل تعليمات البوت...' : 'Enter bot instructions...'}
-              />
-            ) : (
-              <p className={`text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>
-                {activeBot.instructions || t('settings.no_instructions')}
-              </p>
-            )}
-          </motion.div>
 
           {/* Bot Settings */}
           <motion.div
@@ -168,43 +157,27 @@ export default function SettingsPage() {
             transition={{ delay: 0.3 }}
             className="bg-white rounded-lg border border-border p-6"
           >
-            <h2 className={`text-lg font-bold text-foreground mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+            <h2 className="text-lg font-bold text-foreground mb-4">
               {isRTL ? 'إعدادات البوت' : 'Bot Settings'}
             </h2>
             <div className="space-y-4">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between">
                 <div>
                   <p className={`font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {t('settings.bot_status')}
+                    {isRTL ? 'البوت نشط (رد تلقائي)' : 'Bot Status (Auto Reply)'}
                   </p>
                   <p className={`text-sm text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {isRTL ? 'تفعيل أو إيقاف البوت' : 'Enable or disable the bot'}
+                    {isRTL ? 'تفعيل أو إيقاف الردود التلقائية للبوت' : 'Enable or disable auto responses for the bot'}
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={botSettings.isActive}
                   onCheckedChange={(checked) => setBotSettings(prev => ({ ...prev, isActive: checked }))}
                   disabled={!isEditing}
                 />
               </div>
-              
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div>
-                  <p className={`font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {isRTL ? 'الرد التلقائي' : 'Auto Reply'}
-                  </p>
-                  <p className={`text-sm text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {isRTL ? 'رد تلقائي على الرسائل الجديدة' : 'Auto respond to new messages'}
-                  </p>
-                </div>
-                <Switch 
-                  checked={botSettings.autoReply}
-                  onCheckedChange={(checked) => setBotSettings(prev => ({ ...prev, autoReply: checked }))}
-                  disabled={!isEditing}
-                />
-              </div>
-              
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+
+              <div className="flex items-center justify-between">
                 <div>
                   <p className={`font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
                     {isRTL ? 'جمع العملاء المحتملين' : 'Collect Leads'}
@@ -213,14 +186,14 @@ export default function SettingsPage() {
                     {isRTL ? 'جمع معلومات العملاء المحتملين' : 'Collect potential customer information'}
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={botSettings.collectLeads}
                   onCheckedChange={(checked) => setBotSettings(prev => ({ ...prev, collectLeads: checked }))}
                   disabled={!isEditing}
                 />
               </div>
-              
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+
+              <div className="flex items-center justify-between">
                 <div>
                   <p className={`font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
                     {isRTL ? 'التحويل للوكيل' : 'Agent Handoff'}
@@ -229,7 +202,7 @@ export default function SettingsPage() {
                     {isRTL ? 'تحويل المحادثات المعقدة للوكيل البشري' : 'Transfer complex conversations to human agent'}
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={botSettings.handoffEnabled}
                   onCheckedChange={(checked) => setBotSettings(prev => ({ ...prev, handoffEnabled: checked }))}
                   disabled={!isEditing}
@@ -281,10 +254,10 @@ export default function SettingsPage() {
             <p className={`text-sm text-red-600 mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
               {isRTL ? 'حذف البوت نهائياً. هذا الإجراء لا يمكن التراجع عنه.' : 'Permanently delete this bot. This action cannot be undone.'}
             </p>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
-              className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+              className="gap-2 text-white"
             >
               <Trash2 className="w-4 h-4" />
               {isRTL ? 'حذف البوت' : 'Delete Bot'}
@@ -295,17 +268,18 @@ export default function SettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg border border-border p-12 text-center"
+          className="bg-white rounded-xl border border-dashed border-border p-12 text-center"
         >
-          <SettingsIcon className="w-16 h-16 text-muted mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-foreground mb-2">
+          <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <SettingsIcon className="w-8 h-8 text-muted" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">
             {t('settings.no_bot')}
           </h3>
-          <p className="text-secondary mb-6">
+          <p className="text-secondary mb-6 max-w-sm mx-auto">
             {t('settings.no_bot_desc')}
           </p>
-          <Button className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <Button variant="default" className="gap-2" onClick={() => window.location.href = '/dashboard/bots/new'}>
             <Plus className="w-4 h-4" />
             {t('sidebar.new_bot')}
           </Button>
@@ -320,14 +294,17 @@ export default function SettingsPage() {
               {isRTL ? 'هل أنت متأكد؟' : 'Are you sure?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {isRTL 
+              {isRTL
                 ? 'سيتم حذف هذا البوت نهائياً مع جميع بياناته. لا يمكن التراجع عن هذا الإجراء.'
                 : 'This will permanently delete this bot and all its data. This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className={isRTL ? 'flex-row-reverse' : ''}>
+          <AlertDialogFooter>
             <AlertDialogCancel>{t('action.cancel')}</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {t('action.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>

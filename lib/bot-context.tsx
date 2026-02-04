@@ -12,6 +12,9 @@ export interface BotData {
   channels: string[]
   messageCount: number
   createdAt: string
+  autoReply?: boolean
+  collectLeads?: boolean
+  handoffEnabled?: boolean
 }
 
 export interface BotContextType {
@@ -40,7 +43,10 @@ const MOCK_BOTS: BotData[] = [
     ],
     channels: ['Email', 'WhatsApp', 'Telegram'],
     messageCount: 1240,
-    createdAt: '2024-01-15'
+    createdAt: '2024-01-15',
+    autoReply: true,
+    collectLeads: true,
+    handoffEnabled: true
   },
   {
     id: 'bot-2',
@@ -51,13 +57,16 @@ const MOCK_BOTS: BotData[] = [
     knowledge: ['Product Catalog', 'Pricing Information'],
     channels: ['Website Chat'],
     messageCount: 856,
-    createdAt: '2024-01-10'
+    createdAt: '2024-01-10',
+    autoReply: false,
+    collectLeads: true,
+    handoffEnabled: false
   }
 ]
 
 export function BotProvider({ children }: { children: ReactNode }) {
-  const [bots, setBots] = useState<BotData[]>(MOCK_BOTS)
-  const [activeBot, setActiveBotState] = useState<BotData | null>(MOCK_BOTS[0])
+  const [bots, setBots] = useState<BotData[]>([])
+  const [activeBot, setActiveBotState] = useState<BotData | null>(null)
 
   const setActiveBot = useCallback((bot: BotData) => {
     setActiveBotState(bot)
@@ -86,15 +95,17 @@ export function BotProvider({ children }: { children: ReactNode }) {
   }, [activeBot?.id])
 
   const deleteBot = useCallback((id: string) => {
-    setBots(prev => prev.filter(bot => bot.id !== id))
-    // Switch to first bot if active bot is deleted
-    if (activeBot?.id === id) {
-      const remaining = bots.filter(bot => bot.id !== id)
-      setActiveBotState(remaining[0] || null)
-    }
+    setBots(prev => {
+      const remaining = prev.filter(bot => bot.id !== id)
+      // Switch to first bot if active bot is deleted
+      if (activeBot?.id === id) {
+        setActiveBotState(remaining[0] || null)
+      }
+      return remaining
+    })
     // Simulate API call here later
     console.log('[BotContext] Bot deleted:', id)
-  }, [activeBot?.id, bots])
+  }, [activeBot?.id])
 
   const refreshBots = useCallback(() => {
     // This will fetch from API later

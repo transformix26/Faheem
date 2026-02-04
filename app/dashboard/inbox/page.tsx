@@ -130,18 +130,33 @@ export default function InboxPage() {
   const [showNewConvDialog, setShowNewConvDialog] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Effects
   useEffect(() => {
     if (selectedId) {
       setMessages(MOCK_MESSAGES[selectedId] || [])
-      // Scroll to bottom
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+      // Scroll to bottom without page-level jump
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+          if (scrollContainer) {
+            scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'instant' })
+          }
+        }
+      }, 50)
     }
   }, [selectedId])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > 0) {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+        if (scrollContainer) {
+          scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' })
+        }
+      }
+    }
   }, [messages])
 
   // Handlers
@@ -194,9 +209,6 @@ export default function InboxPage() {
         <div className="p-4 border-b border-border space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-lg">{t('inbox.title')}</h2>
-            <Button size="icon" variant="ghost" onClick={() => setShowNewConvDialog(true)}>
-              <Plus className="w-5 h-5" />
-            </Button>
           </div>
           <div className="relative">
             <Search className={`absolute top-2.5 w-4 h-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
@@ -298,7 +310,7 @@ export default function InboxPage() {
             </div>
 
             {/* Messages Area */}
-            <ScrollArea className="flex-1 bg-muted/20 p-4">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 bg-muted/20 p-4">
               <div className="flex flex-col gap-4 max-w-3xl mx-auto">
                 {messages.map((msg, idx) => {
                   const isMe = msg.sender === 'agent'
@@ -316,8 +328,8 @@ export default function InboxPage() {
                       </Avatar>
                       <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
                         <div className={`px-4 py-2 rounded-2xl shadow-sm ${isMe
-                            ? 'bg-primary text-primary-foreground rounded-br-none'
-                            : 'bg-white border border-border text-foreground rounded-bl-none'
+                          ? 'bg-primary text-primary-foreground rounded-br-none'
+                          : 'bg-white border border-border text-foreground rounded-bl-none'
                           }`}>
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         </div>
@@ -356,7 +368,7 @@ export default function InboxPage() {
                   className="shrink-0 rounded-xl"
                   size="icon"
                 >
-                  <Send className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
+                  <Send className={`w-5 h-5 ${isRTL ? '-scale-x-100' : ''}`} />
                 </Button>
               </div>
             </div>

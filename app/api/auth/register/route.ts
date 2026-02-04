@@ -27,10 +27,48 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Replace with actual database lookup to check if email exists
-    // TODO: Hash password with bcrypt or similar before storing
-    // Mock implementation assumes user doesn't exist
+    // --- باك حقيقي (Real Backend) ---
+    /*
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (backendUrl) {
+      try {
+        const backendResponse = await fetch(`${backendUrl}/api/v1/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, firstName, lastName, phoneNumber })
+        });
+        
+        const data = await backendResponse.json();
+        
+        if (!backendResponse.ok) {
+          return NextResponse.json(
+            { error: data.message || 'Registration failed', code: data.code || 'BACKEND_ERROR' },
+            { status: backendResponse.status }
+          );
+        }
 
+        const response = NextResponse.json({
+          success: true,
+          user: data.user,
+          accessToken: data.accessToken,
+        });
+
+        response.cookies.set('refreshToken', data.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60,
+          path: '/',
+        });
+
+        return response;
+      } catch (err) {
+        console.error('Backend connection error:', err);
+      }
+    }
+    */
+
+    // Mock implementation assumes user doesn't exist
     const newUser = {
       id: `user_${Date.now()}`,
       email,

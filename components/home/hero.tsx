@@ -4,12 +4,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
+import { useAuth } from '@/lib/auth-context'
 
 export function Hero() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const { user } = useAuth()
+  const isRTL = language === 'ar'
 
   return (
-    <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
+    <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background via-background to-primary/5">
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Text Content */}
@@ -19,17 +22,37 @@ export function Hero() {
             transition={{ duration: 0.6 }}
             className="space-y-6 md:space-y-8"
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
-              {t('hero.title_start')} <span className="text-primary">5</span> {t('hero.title_end')}
-            </h1>
-            <p className="text-lg md:text-xl text-foreground/70 leading-relaxed max-w-lg text-balance">
-              {t('hero.description')}
-            </p>
-            <Link href="/register">
-              <Button size="lg" className="bg-primary hover:bg-primary-hover text-white text-base md:text-lg px-6 md:px-8 w-full sm:w-auto">
-                {t('hero.cta')}
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
+                  {isRTL ? 'أهلاً بك مجدداً،' : 'Welcome back,'} <span className="text-primary">{user.firstName}</span>!
+                </h1>
+                <p className="text-lg md:text-xl text-foreground/70 leading-relaxed max-w-lg text-balance">
+                  {isRTL
+                    ? 'بوتاتك الذكية بانتظارك. ابدأ في إدارة المحادثات وتدريب الذكاء الاصطناعي الآن.'
+                    : 'Your smart bots are waiting for you. Start managing conversations and training your AI now.'}
+                </p>
+                <Link href="/dashboard">
+                  <Button size="lg" className="bg-primary hover:bg-primary-hover text-white text-base md:text-lg px-6 md:px-8 w-full sm:w-auto">
+                    {isRTL ? 'انتقل إلى لوحة التحكم' : 'Go to Dashboard'}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight text-balance">
+                  {t('hero.title_start')} <span className="text-primary">5</span> {t('hero.title_end')}
+                </h1>
+                <p className="text-lg md:text-xl text-foreground/70 leading-relaxed max-w-lg text-balance">
+                  {t('hero.description')}
+                </p>
+                <Link href="/register">
+                  <Button size="lg" className="bg-primary hover:bg-primary-hover text-white text-base md:text-lg px-6 md:px-8 w-full sm:w-auto">
+                    {t('hero.cta')}
+                  </Button>
+                </Link>
+              </>
+            )}
           </motion.div>
 
           {/* Chat Mockup */}
@@ -41,7 +64,7 @@ export function Hero() {
           >
             <div className="bg-gradient-to-r from-primary to-primary-hover p-4 md:p-6 text-white flex items-center gap-4">
               <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center font-bold text-base md:text-lg">
-                ف
+                {t('hero.assistant_icon')}
               </div>
               <div>
                 <div className="font-semibold text-sm md:text-base">{t('hero.assistant_name')}</div>

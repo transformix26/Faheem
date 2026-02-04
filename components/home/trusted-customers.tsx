@@ -2,17 +2,18 @@
 
 import { motion } from 'framer-motion'
 import { useLanguage } from '@/lib/language-context'
+import { Building2, Home, Cross, Construction, Gem, Trees } from 'lucide-react'
 
 export function TrustedCustomers() {
   const { t } = useLanguage()
 
   const customers = [
-    { name: 'Tech Corp', logo: '🏢' },
-    { name: 'Digital Hub', logo: '💼' },
-    { name: 'Cloud Solutions', logo: '☁️' },
-    { name: 'Smart Systems', logo: '⚙️' },
-    { name: 'Future Tech', logo: '🚀' },
-    { name: 'Data Analytics', logo: '📊' },
+    { name: 'Arkan', logo: <Building2 className="w-full h-full text-primary" /> },
+    { name: 'Badreldin', logo: <Home className="w-full h-full text-primary" /> },
+    { name: 'Reviv', logo: <Cross className="w-full h-full text-primary" /> },
+    { name: 'Helwan', logo: <Construction className="w-full h-full text-primary" /> },
+    { name: 'Capital Group', logo: <Gem className="w-full h-full text-primary" /> },
+    { name: 'Palm Hills', logo: <Trees className="w-full h-full text-primary" /> },
   ]
 
   return (

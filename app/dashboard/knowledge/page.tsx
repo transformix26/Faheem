@@ -2,102 +2,144 @@
 
 import React from 'react'
 import { useState, useRef, useMemo, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, FileText, Edit2, Trash2, Upload, X, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Plus, FileText, Trash2, Upload, X, AlertCircle,
+  Package, AlignLeft, Calendar, FileType, CheckCircle2, Circle
+} from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { useBotContext } from '@/lib/bot-context'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter
+} from '@/components/ui/dialog'
+
+// --- Types ---
+
+type KnowledgeType = 'manual' | 'upload' | 'product'
+
+interface ProductData {
+  name: string
+  description: string
+  price: string
+  category: string
+}
 
 interface KnowledgeItem {
   id: string
+  type: KnowledgeType
   title: string
-  description: string
+  content?: string // For manual
+  productData?: ProductData // For product
+  fileName?: string // For upload
+  fileSize?: string
+  isActive: boolean
   createdAt: string
-  fileName?: string
 }
 
-const ALLOWED_FILE_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/csv']
-const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv']
+// --- Constants ---
+
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+
+// --- Page Component ---
 
 export default function KnowledgePage() {
   const { t, language } = useLanguage()
   const { activeBot } = useBotContext()
-  
-  // تحويل معارف الـ Bot إلى قائمة KnowledgeItems
-  const initialItems = useMemo(() => {
-    if (!activeBot || !activeBot.knowledge.length) {
-      return [
-        {
-          id: '1',
-          title: language === 'ar' ? 'التعليمات الرئيسية' : 'Main Instructions',
-          description: language === 'ar' ? 'أنت وكيل دعم عملاء ودود مفيد. تساعد العملاء بأسئلتهم وتحل المشاكل.' : 'You are a helpful customer support agent. Help customers with their questions and solve problems.',
-          createdAt: '2024-01-20',
-        },
-        {
-          id: '2',
-          title: language === 'ar' ? 'سياسة الاسترجاع' : 'Return Policy',
-          description: language === 'ar' ? 'سياسة الاسترجاع: 30 يوم ضمان استرجاع المبلغ كاملاً بدون أسئلة.' : 'Return Policy: 30-day money-back guarantee with no questions asked.',
-          createdAt: '2024-01-19',
-        },
-      ]
+  const isRTL = language === 'ar'
+
+  // State
+  const [items, setItems] = useState<KnowledgeItem[]>([
+    {
+      id: '1',
+      type: 'manual',
+      title: isRTL ? 'ترحيب العملاء' : 'Customer Welcome',
+      content: isRTL ? 'أهلاً بك في متجرنا! كيف يمكنني مساعدتك اليوم؟' : 'Welcome to our store! How can I help you today?',
+      isActive: true,
+      createdAt: '2024-01-20',
+    },
+    {
+      id: '2',
+      type: 'product',
+      title: isRTL ? 'ساعة ذكية X1' : 'Smart Watch X1',
+      productData: {
+        name: 'Smart Watch X1',
+        description: 'Advanced waterproof smart watch with heart rate monitor',
+        price: '299 SAR',
+        category: 'Electronics'
+      },
+      isActive: true,
+      createdAt: '2024-01-22',
     }
-    return activeBot.knowledge.map((item, idx) => ({
-      id: `${idx}`,
-      title: item,
-      description: `Knowledge item from ${activeBot.name}`,
-      createdAt: activeBot.createdAt,
-    }))
-  }, [activeBot, language])
-
-  const [items, setItems] = useState<KnowledgeItem[]>(initialItems)
-
-  // Update items when bot changes
-  useEffect(() => {
-    setItems(initialItems)
-  }, [initialItems, activeBot])
+  ])
 
   const [showForm, setShowForm] = useState(false)
-  const [uploadMode, setUploadMode] = useState<'form' | 'upload'>('form')
-  const [newItem, setNewItem] = useState({ title: '', description: '' })
-  const [dragActive, setDragActive] = useState(false)
+  const [activeType, setActiveType] = useState<KnowledgeType>('manual')
+
+  // Form State
+  const [manualData, setManualData] = useState({ title: '', content: '' })
+  const [productData, setProductData] = useState<ProductData>({ name: '', description: '', price: '', category: '' })
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Handlers
   const handleAddItem = () => {
-    if (newItem.title && newItem.description) {
-      setItems([
-        ...items,
-        {
-          id: Date.now().toString(),
-          title: newItem.title,
-          description: newItem.description,
-          createdAt: new Date().toISOString().split('T')[0],
-        },
-      ])
-      setNewItem({ title: '', description: '' })
+    let newItem: KnowledgeItem | null = null
+    const base = {
+      id: Date.now().toString(),
+      isActive: true,
+      createdAt: new Date().toISOString().split('T')[0],
+    }
+
+    if (activeType === 'manual' && manualData.title && manualData.content) {
+      newItem = { ...base, type: 'manual', title: manualData.title, content: manualData.content }
+      setManualData({ title: '', content: '' })
+    } else if (activeType === 'product' && productData.name) {
+      newItem = { ...base, type: 'product', title: productData.name, productData }
+      setProductData({ name: '', description: '', price: '', category: '' })
+    } else if (activeType === 'upload' && uploadedFile) {
+      newItem = {
+        ...base,
+        type: 'upload',
+        title: uploadedFile.name,
+        fileName: uploadedFile.name,
+        fileSize: (uploadedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+      }
+      setUploadedFile(null)
+    }
+
+    if (newItem) {
+      setItems([newItem, ...items])
       setShowForm(false)
     }
   }
 
-  const handleDeleteItem = (id: string) => {
+  const toggleStatus = (id: string) => {
+    setItems(items.map(item => item.id === id ? { ...item, isActive: !item.isActive } : item))
+  }
+
+  const deleteItem = (id: string) => {
     setItems(items.filter(item => item.id !== id))
   }
 
-  const validateFile = (file: File): string | null => {
-    if (!ALLOWED_FILE_TYPES.includes(file.type) && !ALLOWED_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext))) {
-      return t('error.unsupported_file')
+  // File Upload Logic
+  const handleFileSelect = (file: File) => {
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      setUploadError(t('knowledge.error.unsupported'))
+      setUploadedFile(null)
+      return
     }
     if (file.size > MAX_FILE_SIZE) {
-      return t('error.file_too_large')
-    }
-    return null
-  }
-
-  const handleFileSelect = (file: File) => {
-    const error = validateFile(file)
-    if (error) {
-      setUploadError(error)
+      setUploadError(t('knowledge.error.too_large'))
       setUploadedFile(null)
       return
     }
@@ -105,344 +147,237 @@ export default function KnowledgePage() {
     setUploadedFile(file)
   }
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-
-    const files = e.dataTransfer.files
-    if (files && files.length > 0) {
-      handleFileSelect(files[0])
-    }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFileSelect(e.target.files[0])
-    }
-  }
-
-  const handleUploadFile = () => {
-    if (uploadedFile) {
-      setItems([
-        ...items,
-        {
-          id: Date.now().toString(),
-          title: uploadedFile.name,
-          description: language === 'ar' 
-            ? `تم رفع الملف: ${uploadedFile.name}`
-            : `File uploaded: ${uploadedFile.name}`,
-          createdAt: new Date().toISOString().split('T')[0],
-          fileName: uploadedFile.name,
-        },
-      ])
-      setUploadedFile(null)
-      setUploadMode('form')
-      setShowForm(false)
-    }
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      dir={isRTL ? 'rtl' : 'ltr'}
+      className="space-y-8"
     >
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            {t('knowledge.title')}
-          </h1>
-          <p className="text-secondary text-sm md:text-base">
-            {t('knowledge.subtitle')}
-          </p>
+          <h1 className="text-3xl font-bold text-foreground">{t('knowledge.title')}</h1>
+          <p className="text-secondary mt-1">{t('knowledge.subtitle')}</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-medium text-sm whitespace-nowrap"
-        >
+        <Button onClick={() => setShowForm(true)} className="gap-2">
           <Plus className="w-5 h-5" />
           {t('knowledge.add_new')}
-        </motion.button>
+        </Button>
       </div>
 
-      {/* Add Form */}
-      {showForm && (
+      {!activeBot ? (
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg border border-border p-4 md:p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-foreground">
-              {t('knowledge.add_new')}
-            </h2>
-            <button
-              onClick={() => {
-                setShowForm(false)
-                setUploadMode('form')
-                setUploadedFile(null)
-                setUploadError(null)
-              }}
-              className="p-1 hover:bg-muted rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5 text-secondary" />
-            </button>
+          className="bg-white rounded-xl border border-dashed border-border p-12 text-center"
+        >
+          <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Package className="w-8 h-8 text-muted" />
           </div>
-
-          {/* Mode Toggle */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            <button
-              onClick={() => {
-                setUploadMode('form')
-                setUploadError(null)
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${uploadMode === 'form'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-foreground hover:bg-border'
-                }`}
-            >
-              {t('knowledge.manual_text')}
-            </button>
-            <button
-              onClick={() => {
-                setUploadMode('upload')
-                setUploadError(null)
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm ${uploadMode === 'upload'
-                ? 'bg-primary text-white'
-                : 'bg-muted text-foreground hover:bg-border'
-                }`}
-            >
-              <Upload className="w-4 h-4" />
-              {t('knowledge.upload_file')}
-            </button>
-          </div>
-
-          {uploadMode === 'form' ? (
-            <div className="space-y-4">
-              <div>
-                <label className="label-text">{t('knowledge.title_label')}</label>
-                <input
-                  type="text"
-                  value={newItem.title}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, title: e.target.value }))}
-                  className="input-field"
-                  placeholder={t('knowledge.title_placeholder')}
-                />
-              </div>
-              <div>
-                <label className="label-text">{t('knowledge.description_label')}</label>
-                <textarea
-                  value={newItem.description}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-white text-foreground placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none text-sm"
-                  placeholder={t('knowledge.description_placeholder')}
-                  rows={4}
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddItem}
-                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!newItem.title || !newItem.description}
-                >
-                  {t('knowledge.add')}
-                </motion.button>
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 px-4 py-3 border border-border text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm"
-                >
-                  {t('knowledge.cancel')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* File Upload Area */}
-              <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className={`relative border-2 border-dashed rounded-lg p-8 md:p-12 text-center transition-all cursor-pointer ${dragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-                  }`}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <motion.div
-                  animate={{ y: dragActive ? -5 : 0 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <Upload className={`w-12 h-12 mx-auto mb-4 ${dragActive ? 'text-primary' : 'text-secondary'}`} />
-                  <h3 className="text-base md:text-lg font-bold text-foreground mb-1">
-                    {t('knowledge.drag_files')}
-                  </h3>
-                  <p className="text-sm text-secondary mb-3">
-                    {t('knowledge.file_types')}
-                  </p>
-                </motion.div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.docx,.txt,.csv"
-                  onChange={handleInputChange}
-                  className="hidden"
-                  aria-label={t('knowledge.upload_file')}
-                />
-              </div>
-
-              {/* Error Message */}
-              {uploadError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3"
-                >
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-red-700 text-sm">{uploadError}</p>
-                </motion.div>
-              )}
-
-              {/* File Preview */}
-              {uploadedFile && !uploadError && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-primary/5 border border-primary rounded-lg flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <FileText className="w-6 h-6 text-primary flex-shrink-0" />
-                    <div className="text-right min-w-0">
-                      <p className="font-medium text-foreground truncate text-sm">{uploadedFile.name}</p>
-                      <p className="text-sm text-secondary">
-                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setUploadedFile(null)
-                      setUploadError(null)
-                    }}
-                    className="p-1 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
-                  >
-                    <X className="w-5 h-5 text-primary" />
-                  </button>
-                </motion.div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleUploadFile}
-                  disabled={!uploadedFile || !!uploadError}
-                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  {t('knowledge.upload')}
-                </motion.button>
-                <button
-                  onClick={() => {
-                    setShowForm(false)
-                    setUploadMode('form')
-                    setUploadedFile(null)
-                    setUploadError(null)
-                  }}
-                  className="flex-1 px-4 py-3 border border-border text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm"
-                >
-                  {t('knowledge.cancel')}
-                </button>
-              </div>
-            </div>
-          )}
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            {t('sidebar.no_bot')}
+          </h3>
+          <p className="text-secondary mb-6 max-w-sm mx-auto">
+            {t('settings.no_bot_desc')}
+          </p>
+          <Button variant="default" className="gap-2" onClick={() => window.location.href = '/dashboard/bots/new'}>
+            <Plus className="w-4 h-4" />
+            {t('sidebar.new_bot')}
+          </Button>
         </motion.div>
-      )}
-
-      {/* Knowledge Items List */}
-      <div className="grid gap-4">
-        {items.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-lg border border-border p-8 md:p-12 text-center"
-          >
-            <FileText className="w-12 md:w-16 h-12 md:h-16 text-muted mx-auto mb-4" />
-            <h3 className="text-base md:text-lg font-bold text-foreground mb-2">
-              {t('knowledge.no_knowledge')}
-            </h3>
-            <p className="text-secondary mb-6 text-sm">
-              {t('knowledge.no_knowledge_desc')}
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-colors font-medium text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              {t('knowledge.add_now')}
-            </motion.button>
-          </motion.div>
-        ) : (
-          items.map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="bg-white rounded-lg border border-border p-4 md:p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 md:gap-0">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base md:text-lg font-bold text-foreground mb-1 break-words">
-                    {item.title}
-                  </h3>
-                  <p className="text-secondary text-xs md:text-sm">
-                    {new Date(item.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="p-2 text-secondary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    title={t('nav.settings')}
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="p-2 text-secondary hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </motion.button>
-                </div>
+      ) : (
+        <>
+          {/* Grid of Knowledge */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white border border-dashed border-border rounded-xl">
+                <FileText className="w-16 h-16 text-muted mx-auto mb-4" />
+                <h3 className="text-xl font-bold">{t('knowledge.no_knowledge')}</h3>
+                <Button variant="outline" className="mt-4" onClick={() => setShowForm(true)}>
+                  {t('knowledge.add_now')}
+                </Button>
               </div>
-              <p className="text-foreground line-clamp-2 text-sm mt-3">{item.description}</p>
-            </motion.div>
-          ))
-        )}
-      </div>
+            ) : items.map(item => (
+              <motion.div
+                key={item.id}
+                layout
+                className={`bg-white rounded-xl border p-6 shadow-sm flex flex-col transition-all hover:shadow-md ${!item.isActive ? 'grayscale opacity-70' : 'border-border'}`}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`p-2 rounded-lg ${item.type === 'manual' ? 'bg-blue-50 text-blue-600' :
+                    item.type === 'product' ? 'bg-orange-50 text-orange-600' :
+                      'bg-purple-50 text-purple-600'
+                    }`}>
+                    {item.type === 'manual' ? <AlignLeft className="w-5 h-5" /> :
+                      item.type === 'product' ? <Package className="w-5 h-5" /> :
+                        <FileType className="w-5 h-5" />}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={item.isActive}
+                      onCheckedChange={() => toggleStatus(item.id)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => deleteItem(item.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <h3 className={`font-bold text-lg mb-2 truncate ${isRTL ? 'text-right' : 'text-left'}`}>{item.title}</h3>
+
+                <div className="flex-1 space-y-3">
+                  {item.type === 'manual' && (
+                    <p className={`text-sm text-secondary line-clamp-3 ${isRTL ? 'text-right' : 'text-left'}`}>{item.content}</p>
+                  )}
+
+                  {item.type === 'product' && item.productData && (
+                    <div className={`space-y-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      <Badge variant="outline" className="mb-1">{item.productData.category}</Badge>
+                      <p className="text-sm font-bold text-primary">{item.productData.price}</p>
+                      <p className="text-xs text-secondary line-clamp-2 leading-relaxed">{item.productData.description}</p>
+                    </div>
+                  )}
+
+                  {item.type === 'upload' && (
+                    <div className={`flex items-center gap-2 p-2 bg-muted/30 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <FileText className="w-4 h-4 text-secondary" />
+                      <div className={`min-w-0 flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                        <p className="text-xs font-medium truncate">{item.fileName}</p>
+                        <p className="text-[10px] text-secondary">{item.fileSize}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`mt-4 pt-4 border-t border-border flex items-center justify-between text-[11px] text-secondary ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <span className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Calendar className="w-3 h-3" />
+                    {item.createdAt}
+                  </span>
+                  <Badge variant="secondary" className="capitalize text-[10px]">
+                    {t(`knowledge.type.${(item.type === 'upload' ? 'file' : item.type).toLowerCase()}`)}
+                  </Badge>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Add Dialog */}
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>{t('knowledge.add_new')}</DialogTitle>
+                <DialogDescription>
+                  {isRTL ? 'اختر النوع وأضف المعلومات المطلوبة' : 'Choose type and add the required information'}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex gap-2 p-1 bg-muted rounded-lg mb-6">
+                {(['manual', 'upload', 'product'] as KnowledgeType[]).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setActiveType(type)}
+                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${activeType === type ? 'bg-white shadow-sm text-primary' : 'text-secondary hover:text-foreground'
+                      }`}
+                  >
+                    {t(`knowledge.type.${type === 'upload' ? 'file' : type}`)}
+                  </button>
+                ))}
+              </div>
+
+              {activeType === 'manual' && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.title_label')}</label>
+                    <Input
+                      value={manualData.title}
+                      onChange={e => setManualData({ ...manualData, title: e.target.value })}
+                      placeholder={t('knowledge.title_placeholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.content_label')}</label>
+                    <Textarea
+                      value={manualData.content}
+                      onChange={e => setManualData({ ...manualData, content: e.target.value })}
+                      placeholder={t('knowledge.content_placeholder')}
+                      rows={5}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeType === 'product' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.product_name')}</label>
+                    <Input
+                      value={productData.name}
+                      onChange={e => setProductData({ ...productData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.price')}</label>
+                    <Input
+                      value={productData.price}
+                      onChange={e => setProductData({ ...productData, price: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.category')}</label>
+                    <Input
+                      value={productData.category}
+                      onChange={e => setProductData({ ...productData, category: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-sm font-medium">{t('knowledge.description')}</label>
+                    <Textarea
+                      value={productData.description}
+                      onChange={e => setProductData({ ...productData, description: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeType === 'upload' && (
+                <div className="space-y-4">
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={(e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                      }`}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className={`w-12 h-12 mx-auto mb-4 ${dragActive ? 'text-primary' : 'text-secondary'}`} />
+                    <p className="font-bold">{t('knowledge.drag_drop')}</p>
+                    <p className="text-xs text-secondary mt-2">{t('knowledge.supported_formats')}</p>
+                    <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} />
+                  </div>
+
+                  {uploadError && <div className="text-red-500 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{uploadError}</div>}
+                  {uploadedFile && (
+                    <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-primary" />
+                        <span className="text-sm font-medium truncate max-w-[200px]">{uploadedFile.name}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setUploadedFile(null)}><X className="w-4 h-4" /></Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <DialogFooter className="mt-6">
+                <Button variant="outline" onClick={() => setShowForm(false)}>{t('action.cancel')}</Button>
+                <Button onClick={handleAddItem}>{t('knowledge.add')}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </motion.div>
   )
 }

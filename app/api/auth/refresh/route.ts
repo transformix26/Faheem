@@ -21,6 +21,48 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // --- باك حقيقي (Real Backend) ---
+    /*
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (backendUrl) {
+      try {
+        const backendResponse = await fetch(`${backendUrl}/api/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
+        
+        const data = await backendResponse.json();
+        
+        if (!backendResponse.ok) {
+          const res = NextResponse.json(
+            { error: data.message || 'Refresh failed', code: data.code || 'BACKEND_ERROR' },
+            { status: backendResponse.status }
+          );
+          res.cookies.delete('refreshToken');
+          return res;
+        }
+
+        const response = NextResponse.json({
+          success: true,
+          accessToken: data.accessToken,
+        });
+
+        response.cookies.set('refreshToken', data.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 30 * 24 * 60 * 60,
+          path: '/',
+        });
+
+        return response;
+      } catch (err) {
+        console.error('Backend connection error:', err);
+      }
+    }
+    */
+
     // Verify refresh token (in production, use JWT library)
     const verified = verifyRefreshToken(refreshToken)
     if (!verified) {

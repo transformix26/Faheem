@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { MessageCircle, BarChart3, Users, TrendingUp, Clock, Zap, Plus, Bot } from 'lucide-react'
@@ -19,9 +20,10 @@ import { Textarea } from '@/components/ui/textarea'
 
 export default function DashboardPage() {
   const { t, language } = useLanguage()
-  const { activeBot } = useBotContext()
+  const { activeBot, bots, createBot, setActiveBot } = useBotContext()
   const isRTL = language === 'ar'
   const [showCreateBotDialog, setShowCreateBotDialog] = useState(false)
+  const router = useRouter()
 
   const stats = useMemo(() => [
     {
@@ -73,6 +75,30 @@ export default function DashboardPage() {
     },
   ], [t])
 
+
+  if (bots.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+          <Bot className="w-10 h-10 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">
+          {isRTL ? 'مرحباً بك في فهيم' : 'Welcome to Faheem'}
+        </h2>
+        <p className="text-secondary max-w-md mb-8">
+          {isRTL
+            ? 'ابدأ بإنشاء أول بوت ذكي لك لمساعدتك في التواصل مع عملائك بشكل أفضل.'
+            : 'Start by creating your first smart bot to help you better communicate with your customers.'}
+        </p>
+        <Button onClick={() => router.push('/dashboard/bots/new')} size="lg" className="gap-2">
+          <Plus className="w-5 h-5" />
+          {isRTL ? 'إنشاء بوت جديد' : 'Create New Bot'}
+        </Button>
+
+      </div>
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -91,9 +117,9 @@ export default function DashboardPage() {
             {activeBot ? activeBot.description : t('dashboard.subtitle')}
           </p>
         </div>
-        <Button 
-          onClick={() => setShowCreateBotDialog(true)}
-          className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+        <Button
+          onClick={() => router.push('/dashboard/bots/new')}
+          className="gap-2"
         >
           <Plus className="w-4 h-4" />
           {t('sidebar.new_bot')}
@@ -223,51 +249,6 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* Create Bot Dialog */}
-      <Dialog open={showCreateBotDialog} onOpenChange={setShowCreateBotDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <Bot className="w-5 h-5" />
-              {t('sidebar.new_bot')}
-            </DialogTitle>
-            <DialogDescription>
-              {isRTL ? 'أنشئ بوت جديد للتواصل مع عملائك' : 'Create a new bot to communicate with your customers'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className={`text-sm font-medium ${isRTL ? 'text-right block' : ''}`}>
-                {isRTL ? 'اسم البوت' : 'Bot Name'}
-              </label>
-              <Input placeholder={isRTL ? 'بوت الدعم الفني' : 'Support Bot'} className={`mt-1.5 ${isRTL ? 'text-right' : ''}`} />
-            </div>
-            <div>
-              <label className={`text-sm font-medium ${isRTL ? 'text-right block' : ''}`}>
-                {isRTL ? 'الوصف' : 'Description'}
-              </label>
-              <Input placeholder={isRTL ? 'بوت للرد على استفسارات العملاء' : 'Bot for answering customer inquiries'} className={`mt-1.5 ${isRTL ? 'text-right' : ''}`} />
-            </div>
-            <div>
-              <label className={`text-sm font-medium ${isRTL ? 'text-right block' : ''}`}>
-                {isRTL ? 'التعليمات' : 'Instructions'}
-              </label>
-              <Textarea 
-                placeholder={isRTL ? 'أدخل تعليمات البوت...' : 'Enter bot instructions...'} 
-                className={`mt-1.5 min-h-[100px] ${isRTL ? 'text-right' : ''}`} 
-              />
-            </div>
-          </div>
-          <DialogFooter className={isRTL ? 'flex-row-reverse' : ''}>
-            <Button variant="outline" onClick={() => setShowCreateBotDialog(false)}>
-              {t('action.cancel')}
-            </Button>
-            <Button onClick={() => setShowCreateBotDialog(false)}>
-              {t('action.create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   )
 }

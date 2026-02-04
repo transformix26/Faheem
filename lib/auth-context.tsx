@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => void
   completeOnboarding: (preferences: unknown) => Promise<void>
   refreshAccessToken: () => Promise<void>
+  updateUser: (updatedUser: Partial<User>) => void
 }
 
 export interface RegisterData {
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (stored) {
           const userData = JSON.parse(stored)
           setUser(userData)
-          
+
           // Try to refresh the access token using the refresh token from HttpOnly cookie
           await refreshToken()
         }
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     }
-    
+
     initializeAuth()
   }, [])
 
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         credentials: 'include', // Include cookies in request
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         // Access token is returned in response body (not stored in cookie)
@@ -101,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json()
-      
+
       // Store user data in memory and localStorage
       const userData: User = {
         id: data.user.id,
@@ -111,10 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber: data.user.phoneNumber,
         hasCompletedOnboarding: data.user.hasCompletedOnboarding,
       }
-      
+
       setUser(userData)
       localStorage.setItem('faheem_user', JSON.stringify(userData))
-      
+
       // Store access token in memory only (NOT in localStorage)
       setAccessToken(data.accessToken)
     } finally {
@@ -146,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber: responseData.user.phoneNumber,
         hasCompletedOnboarding: false,
       }
-      
+
       setUser(newUser)
       localStorage.setItem('faheem_user', JSON.stringify(newUser))
       setAccessToken(responseData.accessToken)
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setAccessToken(null)
     localStorage.removeItem('faheem_user')
-    
+
     // Call logout endpoint to clear refresh token cookie
     fetch('/api/auth/logout', {
       method: 'POST',
@@ -169,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const completeOnboarding = async (preferences: unknown) => {
     if (!user) throw new Error('No user logged in')
-    
+
     setIsLoading(true)
     try {
       const response = await fetch('/api/auth/onboarding', {
@@ -196,18 +197,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshToken()
   }, [refreshToken])
 
+  const updateUser = (updatedUserData: Partial<User>) => {
+    if (!user) return
+    const updatedUser = { ...user, ...updatedUserData }
+    setUser(updatedUser)
+    localStorage.setItem('faheem_user', JSON.stringify(updatedUser))
+  }
+
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isLoading, 
-        isAuthenticated: !!user, 
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
         accessToken,
-        login, 
-        register, 
-        logout, 
+        login,
+        register,
+        logout,
         completeOnboarding,
         refreshAccessToken,
+        updateUser,
       }}
     >
       {children}

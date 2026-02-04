@@ -18,6 +18,7 @@ import {
   Plus,
   X,
   Menu,
+  User as UserIcon
 } from 'lucide-react'
 
 export function Sidebar() {
@@ -26,7 +27,7 @@ export function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isRTL, setIsRTL] = useState(true)
   const { user, logout } = useAuth()
-  const { language } = useLanguage()
+  const { t, language } = useLanguage()
   const { activeBot, bots, setActiveBot, createBot } = useBotContext()
   const router = useRouter()
   const pathname = usePathname()
@@ -42,20 +43,7 @@ export function Sidebar() {
   }
 
   const handleAddBot = () => {
-    const newBotId = `bot-${Date.now()}`
-    const newBot = {
-      id: newBotId,
-      name: `Bot ${bots.length + 1}`,
-      description: 'New Bot',
-      status: 'inactive' as const,
-      instructions: '',
-      knowledge: [],
-      channels: [],
-      messageCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-    }
-    createBot(newBot)
-    setActiveBot(newBot)
+    router.push('/dashboard/bots/new')
   }
 
   const handleBotSelect = (bot: typeof activeBot) => {
@@ -79,7 +67,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className={`fixed top-[72px] z-30 lg:hidden p-2 hover:bg-muted rounded-lg transition-colors ${isRTL ? 'left-4' : 'right-4'
+        className={`fixed top-[72px] z-30 xl:hidden p-2 hover:bg-muted rounded-lg transition-colors ${isRTL ? 'left-4' : 'right-4'
           }`}
         aria-label="Toggle sidebar"
       >
@@ -93,7 +81,7 @@ export function Sidebar() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-20 xl:hidden"
         />
       )}
 
@@ -104,13 +92,13 @@ export function Sidebar() {
           [isRTL ? 'right' : 'left']: sidebarOpen ? 0 : '-100%',
         }}
         transition={{ duration: 0.3 }}
-        className={`fixed lg:static inset-y-0 ${isRTL ? 'right-0' : 'left-0'
+        className={`fixed xl:static inset-y-0 ${isRTL ? 'right-0' : 'left-0'
           } w-72 sm:w-80 bg-white ${isRTL ? 'border-l' : 'border-r'
-          } border-border z-40 lg:z-0 flex flex-col overflow-y-auto top-0`}
+          } border-border z-40 xl:z-0 flex flex-col overflow-y-auto top-0`}
       >
         {/* Mobile Close Button - Header */}
-        <div className="lg:hidden p-4 border-b border-border flex justify-between items-center bg-muted/30">
-          <span className="font-semibold text-lg">{isRTL ? 'القائمة' : 'Menu'}</span>
+        <div className="xl:hidden p-4 border-b border-border flex justify-between items-center bg-muted/30">
+          <span className="font-semibold text-lg">{t('sidebar.menu')}</span>
           <button
             onClick={() => setSidebarOpen(false)}
             className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -149,18 +137,11 @@ export function Sidebar() {
               className="mt-2 space-y-1"
             >
               <button
-                className={`w-full ${isRTL ? 'text-right' : 'text-left'
-                  } px-3 py-2 text-sm text-secondary hover:text-foreground hover:bg-muted rounded-lg transition-colors`}
-              >
-                Profile
-              </button>
-              <button
                 onClick={handleLogout}
-                className={`w-full flex ${isRTL ? 'flex-row-reverse' : ''
-                  } items-center justify-end px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors gap-2`}
+                className={`w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors gap-2 ${isRTL ? 'justify-start' : 'justify-start'}`}
               >
                 <LogOut className="w-4 h-4" />
-                Logout
+                {t('sidebar.logout')}
               </button>
             </motion.div>
           )}
@@ -172,7 +153,7 @@ export function Sidebar() {
             className={`text-xs font-semibold text-secondary uppercase mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'
               }`}
           >
-            Active Bot
+            {t('sidebar.active_bot')}
           </div>
           <motion.button
             whileHover={{ backgroundColor: '#F1F5F9' }}
@@ -183,10 +164,10 @@ export function Sidebar() {
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${activeBot?.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
               }`} />
             <span
-              className={`flex-1 font-medium text-foreground truncate ${isRTL ? 'text-right' : 'text-left'
+              className={`flex-1 font-medium text-foreground truncate mx-2 ${isRTL ? 'text-right' : 'text-left'
                 }`}
             >
-              {activeBot?.name || 'No Bot Selected'}
+              {activeBot?.name || t('sidebar.no_bot')}
             </span>
             <ChevronDown
               className={`w-4 h-4 text-secondary transition-transform flex-shrink-0 ${activeBotOpen ? 'rotate-180' : ''
@@ -211,26 +192,15 @@ export function Sidebar() {
                       : 'text-foreground hover:bg-muted'
                     }`}
                 >
-                  <span className="truncate">{bot.name}</span>
+                  <span className="truncate flex-1">{bot.name}</span>
                   {activeBot?.id === bot.id && (
-                    <div className="w-2 h-2 rounded-full bg-white flex-shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-white flex-shrink-0 mx-2" />
                   )}
                 </button>
               ))}
             </motion.div>
           )}
 
-          {/* Add New Bot Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddBot}
-            className={`w-full flex items-center justify-center gap-2 mt-2 sm:mt-3 px-2 sm:px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-medium text-xs sm:text-sm ${isRTL ? 'flex-row-reverse' : ''
-              }`}
-          >
-            <Plus className="w-4 h-4" />
-            New Bot
-          </motion.button>
         </div>
 
         {/* Navigation */}

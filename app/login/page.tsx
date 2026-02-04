@@ -8,8 +8,9 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import { useLanguage } from '@/lib/language-context'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { withPublicRoute } from '@/lib/public-route'
 
-export default function LoginPage() {
+function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -156,3 +157,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+export default withPublicRoute(LoginPage)
