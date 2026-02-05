@@ -60,6 +60,7 @@ export function Sidebar() {
     { href: '/dashboard/knowledge', label: language === 'ar' ? 'قاعدة المعرفة' : 'Knowledge Base', icon: BarChart3 },
     { href: '/dashboard/channels', label: language === 'ar' ? 'القنوات' : 'Channels', icon: TowerControl },
     { href: '/dashboard/settings', label: language === 'ar' ? 'الإعدادات' : 'Settings', icon: Settings },
+    { href: '/dashboard/bots/new', label: language === 'ar' ? 'بوت جديد' : 'New Bot', icon: Plus },
   ]
 
   return (
@@ -236,7 +237,7 @@ export function Sidebar() {
           className={`p-2 sm:p-4 border-t border-border text-center text-xs text-secondary ${isRTL ? 'text-right' : 'text-left'
             }`}
         >
-          © 2024 Faheem
+          © 2026 Faheem
         </div>
       </motion.aside>
       {/* Mobile Menu Button - Moved to bottom to avoid duplication with layout header if present, or keep as is if layout doesn't have one. 

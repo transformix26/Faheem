@@ -28,4 +28,6 @@ next-env.d.ts
 
 /weza
 
-/app/api/auth
+/api-docs
+/comment
+/docs

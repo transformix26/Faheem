@@ -31,10 +31,6 @@ export function Navbar() {
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLanguage(newLang)
     setLanguageOpen(false)
-    // Reload page to apply language changes
-    setTimeout(() => {
-      window.location.reload()
-    }, 100)
   }
 
   const handlePricingClick = (e: React.MouseEvent) => {

@@ -115,7 +115,12 @@ function ProfilePage() {
                             <Calendar className="w-5 h-5 text-secondary" />
                             <div>
                                 <p className="text-sm font-medium">{t('profile.join_date')}</p>
-                                <p className="text-xs text-secondary">February 2024</p>
+                                <p className="text-xs text-secondary">
+                                    {new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en-US', {
+                                        month: 'long',
+                                        year: 'numeric'
+                                    }).format(new Date(user.createdAt || Date.now()))}
+                                </p>
                             </div>
                         </div>
                     </CardContent>

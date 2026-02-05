@@ -29,41 +29,6 @@ export interface BotContextType {
 
 const BotContext = createContext<BotContextType | undefined>(undefined)
 
-// Mock data - will be replaced with API calls later
-const MOCK_BOTS: BotData[] = [
-  {
-    id: 'bot-1',
-    name: 'Bot 1',
-    description: 'Customer Support Bot',
-    status: 'active',
-    instructions: 'Help customers with their questions and solve problems.',
-    knowledge: [
-      'Main Instructions - 1/20/2024',
-      'Return Policy - 1/19/2024'
-    ],
-    channels: ['Email', 'WhatsApp', 'Telegram'],
-    messageCount: 1240,
-    createdAt: '2024-01-15',
-    autoReply: true,
-    collectLeads: true,
-    handoffEnabled: true
-  },
-  {
-    id: 'bot-2',
-    name: 'Bot 2',
-    description: 'Sales Assistant',
-    status: 'inactive',
-    instructions: 'Assist customers with product information and sales.',
-    knowledge: ['Product Catalog', 'Pricing Information'],
-    channels: ['Website Chat'],
-    messageCount: 856,
-    createdAt: '2024-01-10',
-    autoReply: false,
-    collectLeads: true,
-    handoffEnabled: false
-  }
-]
-
 export function BotProvider({ children }: { children: ReactNode }) {
   const [bots, setBots] = useState<BotData[]>([])
   const [activeBot, setActiveBotState] = useState<BotData | null>(null)

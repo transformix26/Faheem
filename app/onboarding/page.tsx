@@ -6,8 +6,9 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/auth-context'
 import { useLanguage } from '@/lib/language-context'
 import { CheckCircle } from 'lucide-react'
+import { withOnboardingRoute } from '@/lib/protected-route'
 
-export default function OnboardingPage() {
+function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [preferences, setPreferences] = useState({
     companyName: '',
@@ -99,8 +100,8 @@ export default function OnboardingPage() {
             >
               <motion.div
                 className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg mb-2 transition-all ${step >= s
-                    ? 'bg-primary text-white'
-                    : 'bg-border text-secondary'
+                  ? 'bg-primary text-white'
+                  : 'bg-border text-secondary'
                   }`}
                 whileInView={{ scale: 1.1 }}
               >
@@ -159,8 +160,8 @@ export default function OnboardingPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setPreferences(prev => ({ ...prev, useCase: useCase.id }))}
                     className={`p-4 rounded-lg border-2 transition-all text-center ${preferences.useCase === useCase.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
                       }`}
                   >
                     <div className="text-2xl mb-2">{useCase.icon}</div>
@@ -186,8 +187,8 @@ export default function OnboardingPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleLanguageToggle(lang)}
                     className={`p-4 rounded-lg border-2 font-medium transition-all ${preferences.botLanguages.includes(lang)
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-border text-foreground hover:border-primary/50'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-foreground hover:border-primary/50'
                       }`}
                   >
                     {lang}
@@ -240,3 +241,5 @@ export default function OnboardingPage() {
     </div>
   )
 }
+
+export default withOnboardingRoute(OnboardingPage)

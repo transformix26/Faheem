@@ -1,12 +1,13 @@
 import React from 'react'
 import type { Metadata, Viewport } from 'next'
 import { Tajawal } from 'next/font/google'
-import { AuthProvider } from '@/lib/auth-context'
+import { AuthProvider } from '@/lib/auth-provider'
 import { LanguageProvider } from '@/lib/language-context'
 import { BotProvider } from '@/lib/bot-context'
 import { HtmlWrapper } from '@/components/html-wrapper'
 import { Navbar } from '@/components/shared/navbar'
 import { Footer } from '@/components/shared/footer'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const tajawal = Tajawal({
@@ -43,6 +44,7 @@ export default function RootLayout({
                   {children}
                 </div>
                 <Footer />
+                <Toaster position="top-center" richColors />
               </BotProvider>
             </AuthProvider>
           </HtmlWrapper>
