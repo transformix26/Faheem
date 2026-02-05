@@ -277,17 +277,15 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Channels
     'channels.title': 'Channels & Connections',
-    'channels.subtitle': 'View your bot status and connected channels',
+    'channels.subtitle': 'View the active channel for your bot',
     'channels.current_bot': 'Current Bot',
     'channels.bot_name': 'Bot Name',
     'channels.status': 'Status',
-    'channels.connected': 'Connected',
-    'channels.pending': 'Pending',
-    'channels.disconnected': 'Disconnected',
-    'channels.all_channels': 'All Channels',
-    'channels.note': 'Note',
-    'channels.note_text': 'Select a bot from the sidebar to view its active channels and status.',
-    'channels.add_channel': 'Add Channel',
+    'channels.connected': 'Active',
+    'channels.pending': 'Not Active',
+    'channels.disconnected': 'Not Active',
+    'channels.note': 'Channel Management',
+    'channels.note_text': 'Your bot connects to one primary channel. You can manage connection details in Settings.',
 
     // Settings
     'settings.title': 'Settings',
@@ -583,17 +581,15 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Channels
     'channels.title': 'الاتصالات والقنوات',
-    'channels.subtitle': 'عرض حالة بوتاتك والقنوات المتصلة',
+    'channels.subtitle': 'عرض القناة النشطة للبوت الخاص بك',
     'channels.current_bot': 'البوت الحالي',
     'channels.bot_name': 'اسم البوت',
     'channels.status': 'الحالة',
-    'channels.connected': 'متصل',
-    'channels.pending': 'قيد الإعداد',
-    'channels.disconnected': 'غير متصل',
-    'channels.all_channels': 'كل القنوات',
-    'channels.note': 'ملاحظة',
-    'channels.note_text': 'اختر البوت من القائمة العلوية لتغيير البوت النشط وعرض قنواته.',
-    'channels.add_channel': 'إضافة قناة',
+    'channels.connected': 'نشط',
+    'channels.pending': 'غير نشط',
+    'channels.disconnected': 'غير نشط',
+    'channels.note': 'إدارة القناة',
+    'channels.note_text': 'يتصل البوت بقناة رئيسية واحدة. يمكنك إدارة تفاصيل الاتصال من الإعدادات.',
 
     // Settings
     'settings.title': 'الإعدادات',

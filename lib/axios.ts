@@ -7,7 +7,7 @@ export const setModuleAccessToken = (token: string | null) => {
 };
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+    baseURL: typeof window !== 'undefined' ? '/api/proxy' : process.env.NEXT_PUBLIC_BACKEND_URL,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
@@ -33,11 +33,10 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const refreshBase = process.env.NEXT_PUBLIC_BACKEND_URL;
+                const refreshBase = typeof window !== 'undefined' ? '/api/proxy' : process.env.NEXT_PUBLIC_BACKEND_URL;
                 // 
-                const response = await axios.post(
+                const response = await axios.get(
                     `${refreshBase}/api/auth/refresh`,
-                    {},
                     { withCredentials: true }
                 );
 
@@ -49,10 +48,16 @@ api.interceptors.response.use(
                     originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                     return api(originalRequest);
                 }
-            } catch (refreshError) {
-                // If refresh fails, just reject. 
-                // Don't force redirect or clear localStorage here; let the AuthProvider manage that.
-                return Promise.reject(error);
+            } catch (refreshError: any) {
+                // If the REFRESH itself fails with 401/403, it means the session is DEAD.
+                // We dispatch a custom event so the AuthProvider can catch it and do a clean logout.
+
+                await api.get("/api/auth/logout", { withCredentials: true });
+
+                if (typeof window !== 'undefined' && (refreshError.response?.status === 401 || refreshError.response?.status === 403)) {
+                    window.dispatchEvent(new CustomEvent('faheem:unauthorized'));
+                }
+                return Promise.reject(refreshError);
             }
         }
 

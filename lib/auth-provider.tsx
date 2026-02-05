@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // We don't remove 'faheem_onboarding_done_*' here to keep it persistent for testing
         setHasAuthHint(false)
 
-        api.post('/api/auth/logout').catch(() => { });
+        api.get('/api/auth/logout').catch(() => { });
 
         toast.info(t('auth.logged_out'))
     }, [t])
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const refreshToken = useCallback(async () => {
         try {
-            const response = await api.post('/api/auth/refresh');
+            const response = await api.get('/api/auth/refresh');
 
             if (response.data.status === 'success') {
                 const newToken = response.data.data.accessToken
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return true
             }
         } catch (error: any) {
-            if (error.response?.status === 401) {
+            if (error.response?.status === 401 || error.response?.status === 403) {
                 return false
             }
             throw error
@@ -114,7 +114,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
         initializeAuth()
-    }, [refreshToken])
+
+        // [SESSION WATCHER] Listen for definitive logout signals from axios interceptors
+        const handleUnauthorized = () => {
+            console.warn('[Auth] Definitive session expiration detected. Logging out...');
+            logout();
+        };
+
+        window.addEventListener('faheem:unauthorized', handleUnauthorized);
+        return () => {
+            window.removeEventListener('faheem:unauthorized', handleUnauthorized);
+        };
+    }, [refreshToken, logout])
+
+    const handleJSendError = useCallback((errorObj: any, defaultKey: string) => {
+        const resp = errorObj.response?.data
+        let msg = ''
+        if (resp) {
+            if (resp.status === 'fail' && resp.data) {
+                msg = resp.data.message || Object.values(resp.data)[0] as string
+            } else if (resp.status === 'error') {
+                msg = resp.message
+            }
+        }
+        if (!msg) msg = errorObj.message || t(defaultKey)
+        if (msg.toLowerCase().includes('user') && msg.toLowerCase().includes('exist')) return t('error.user_not_found')
+        if (msg.toLowerCase().includes('password')) return t('error.incorrect_password')
+        return msg
+    }, [t])
 
     // [3] LOGIN
     const login = async (email: string, password: string) => {
@@ -137,22 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             toast.success(t('auth.welcome_back'))
         } catch (err: any) {
-            const handleJSendError = (errorObj: any) => {
-                const resp = errorObj.response?.data
-                let msg = ''
-                if (resp) {
-                    if (resp.status === 'fail' && resp.data) {
-                        msg = resp.data.message || Object.values(resp.data)[0] as string
-                    } else if (resp.status === 'error') {
-                        msg = resp.message
-                    }
-                }
-                if (!msg) msg = errorObj.message || t('auth.login_failed')
-                if (msg.toLowerCase().includes('user') && msg.toLowerCase().includes('exist')) return t('error.user_not_found')
-                if (msg.toLowerCase().includes('password')) return t('error.incorrect_password')
-                return msg
-            }
-            const message = handleJSendError(err)
+            const message = handleJSendError(err, 'auth.login_failed')
             toast.error(message)
             throw new Error(message);
         } finally {
@@ -160,35 +172,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    // [4] REGISTER (MOCKED)
+    // [4] REGISTER
     const register = async (formData: RegisterData) => {
         setIsLoading(true)
         try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const response = await api.post('/api/auth/register', formData);
+            const { status, data } = response.data;
 
-            const mockAccessToken = 'mock_access_token'
-            const mockUser: User = {
-                id: 'mock-user',
-                email: formData.email,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phoneNumber: formData.phoneNumber,
-                hasCompletedOnboarding: false,
-                createdAt: new Date().toISOString()
+            if (status !== 'success' || !data.accessToken) {
+                throw new Error(data?.message || t('auth.register_failed'));
             }
 
-            localStorage.removeItem(`faheem_onboarding_done_${formData.email}`)
+            const userData = decodeUser(data.accessToken)
 
-            setAccessToken(mockAccessToken)
-            setModuleAccessToken(mockAccessToken)
-            setUser(mockUser)
+            setAccessToken(data.accessToken)
+            setModuleAccessToken(data.accessToken)
+            setUser(userData)
             setHasAuthHint(true)
-            localStorage.setItem('faheem_user', JSON.stringify(mockUser))
+            localStorage.setItem('faheem_user', JSON.stringify(userData))
 
             toast.success(t('auth.account_created'))
         } catch (err: any) {
-            toast.error(t('auth.register_failed'))
-            throw new Error(t('auth.register_failed'));
+            const message = handleJSendError(err, 'auth.register_failed')
+            toast.error(message)
+            throw new Error(message);
         } finally {
             setIsLoading(false)
         }

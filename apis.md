@@ -9,8 +9,8 @@ Endpoints located in `/app/api/auth/`
 |----------|--------|-------------|
 | `/api/auth/login` | POST | Authenticates user and sets session cookies. |
 | `/api/auth/register` | POST | Creates a new user account. |
-| `/api/auth/logout` | POST | Clears session cookies. |
-| `/api/auth/refresh` | POST | Refreshes the access token using rotation. |
+| `/api/auth/logout` | GET | Clears session cookies. |
+| `/api/auth/refresh` | GET | Refreshes the access token using rotation. |
 | `/api/auth/onboarding` | POST | Saves initial user preferences and company data. |
 
 ## Dashboard & Bot Management (Future Node.js)

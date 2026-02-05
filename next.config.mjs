@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: 'https://api.faheem.thetransformix.com/:path*',
+        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL}/:path*`,
       },
     ]
   },

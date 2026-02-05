@@ -1,122 +1,61 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { MessageCircle, CheckCircle, Clock, Plus, Link2, Unlink } from 'lucide-react'
+import { MessageCircle, Link2, Plus, Check, X } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { useBotContext } from '@/lib/bot-context'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-
-interface BotStatus {
-  id: string
-  name: string
-  platform: string
-  status: 'connected' | 'pending' | 'disconnected'
-  icon: string
-}
 
 export default function ChannelsPage() {
   const router = useRouter()
   const { language, t } = useLanguage()
   const { activeBot } = useBotContext()
   const isRTL = language === 'ar'
-  const [showAddChannelDialog, setShowAddChannelDialog] = useState(false)
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
 
+  // Define the 3 platforms with their brand styling
   const platforms = [
-    { id: 'facebook', name: 'Facebook Messenger', icon: 'FB', color: 'from-blue-500 to-blue-600' },
-    { id: 'whatsapp', name: 'WhatsApp Business', icon: 'WA', color: 'from-green-500 to-green-600' },
-    { id: 'instagram', name: 'Instagram DM', icon: 'IG', color: 'from-pink-500 to-purple-600' },
-    { id: 'website', name: 'Website Widget', icon: 'WB', color: 'from-gray-600 to-gray-700' },
+    {
+      id: 'facebook',
+      name: 'Facebook Messenger',
+      icon: 'FB',
+      color: 'bg-[#1877F2]',
+      textColor: 'text-[#1877F2]',
+      borderColor: 'border-[#1877F2]/20',
+      hoverColor: 'hover:border-[#1877F2]/50'
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram DM',
+      icon: 'IG',
+      color: 'bg-gradient-to-tr from-[#FF0069] to-[#C13584]',
+      textColor: 'text-[#C13584]',
+      borderColor: 'border-[#C13584]/20',
+      hoverColor: 'hover:border-[#C13584]/50'
+    },
+    {
+      id: 'whatsapp',
+      name: 'WhatsApp Business',
+      icon: 'WA',
+      color: 'bg-[#25D366]',
+      textColor: 'text-[#25D366]',
+      borderColor: 'border-[#25D366]/20',
+      hoverColor: 'hover:border-[#25D366]/50'
+    },
   ]
 
-  const defaultChannels: BotStatus[] = useMemo(() => [
-    {
-      id: '1',
-      name: t('channels.connected') + ' - Facebook',
-      platform: 'Facebook',
-      status: 'connected',
-      icon: 'FB',
-    },
-    {
-      id: '2',
-      name: t('channels.pending') + ' - WhatsApp',
-      platform: 'WhatsApp',
-      status: 'pending',
-      icon: 'WA',
-    },
-    {
-      id: '3',
-      name: t('channels.disconnected') + ' - Website',
-      platform: 'Website',
-      status: 'disconnected',
-      icon: 'WB',
-    },
-  ], [t])
-
-  const channels = useMemo(() => {
-    if (!activeBot || !activeBot.channels.length) {
-      return defaultChannels
-    }
-    return activeBot.channels.map((channel, idx) => ({
-      id: `${idx}`,
-      name: channel,
-      platform: 'Custom',
-      status: 'connected' as const,
-      icon: 'CH',
-    }))
-  }, [activeBot, defaultChannels])
-
-  const [bots, setBots] = useState<BotStatus[]>(defaultChannels)
-
-  useEffect(() => {
-    setBots(channels)
-  }, [channels, activeBot])
-
-  const getStatusConfig = (status: string) => {
-    const statusLabels = {
-      connected: t('channels.connected'),
-      pending: t('channels.pending'),
-      disconnected: t('channels.disconnected'),
-    }
-
-    switch (status) {
-      case 'connected':
-        return {
-          icon: CheckCircle,
-          label: statusLabels.connected,
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
-        }
-      case 'pending':
-        return {
-          icon: Clock,
-          label: statusLabels.pending,
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
-        }
-      default:
-        return {
-          icon: MessageCircle,
-          label: statusLabels.disconnected,
-          color: 'text-secondary',
-          bgColor: 'bg-muted',
-          borderColor: 'border-border',
-        }
-    }
-  }
+  // Determine which platform is connected
+  const connectedPlatformId = useMemo(() => {
+    if (!activeBot || !activeBot.channels || activeBot.channels.length === 0) return null
+    const channelName = activeBot.channels[0].toLowerCase()
+    if (channelName.includes('whatsapp')) return 'whatsapp'
+    if (channelName.includes('instagram')) return 'instagram'
+    if (channelName.includes('facebook')) return 'facebook'
+    // Default fallback if unknown name but connected, maybe default to first? 
+    // Or return null if no match. Let's assume WhatsApp as common default for now if ambiguous
+    return 'facebook'
+  }, [activeBot])
 
   return (
     <motion.div
@@ -124,24 +63,18 @@ export default function ChannelsPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
       dir={isRTL ? 'rtl' : 'ltr'}
+      className="w-full"
     >
       {/* Page Header */}
-      <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className={`text-2xl md:text-3xl font-bold text-foreground mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-start">
             {t('channels.title')}
           </h1>
-          <p className={`text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>
+          <p className="text-secondary text-start">
             {t('channels.subtitle')}
           </p>
         </div>
-        <Button
-          onClick={() => setShowAddChannelDialog(true)}
-          className={`gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
-        >
-          <Plus className="w-4 h-4" />
-          {t('channels.add_channel')}
-        </Button>
       </div>
 
       {!activeBot ? (
@@ -166,179 +99,88 @@ export default function ChannelsPage() {
         </motion.div>
       ) : (
         <>
-          {/* Current Bot Info */}
+          {/* 3 Buttons / Cards Grid */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {platforms.map((platform, idx) => {
+              const isConnected = connectedPlatformId === platform.id
+
+              return (
+                <motion.div
+                  key={platform.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={`relative group bg-white rounded-xl border-2 p-6 transition-all duration-300 ${isConnected
+                    ? `${platform.borderColor} shadow-lg scale-[1.02]`
+                    : 'border-border hover:border-primary/20 hover:shadow-md opacity-70 hover:opacity-100'
+                    }`}
+                >
+                  {/* Status Badge */}
+                  <div className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'}`}>
+                    {isConnected ? (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-100">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-xs font-bold text-green-700">{t('channels.connected')}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100">
+                        <div className="w-2 h-2 rounded-full bg-slate-400" />
+                        <span className="text-xs font-medium text-slate-500">{t('channels.disconnected')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Icon & Details */}
+                  <div className="flex flex-col items-center text-center mt-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-sm mb-4 ${platform.color}`}>
+                      {platform.icon}
+                    </div>
+
+                    <h3 className="text-lg font-bold text-foreground mb-1">
+                      {platform.name}
+                    </h3>
+
+                    {isConnected ? (
+                      <p className="text-sm text-green-600 font-medium flex items-center gap-1 justify-center">
+                        <Check className="w-3.5 h-3.5" />
+                        {t('channels.connected')}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center">
+                        <X className="w-3.5 h-3.5" />
+                        {t('channels.disconnected')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Visual Indicator of "Selected" logic */}
+                  {isConnected && (
+                    <div className={`absolute inset-0 border-2 rounded-xl pointer-events-none ${platform.borderColor.replace('/20', '/50')}`} />
+                  )}
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* Info Note */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-lg border border-border p-6 mb-8"
+            transition={{ delay: 0.3 }}
+            className="bg-primary/5 border border-primary/10 rounded-lg p-6 flex flex-col gap-2"
           >
-            <h2 className={`text-lg font-bold text-foreground mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t('channels.current_bot')}
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <p className={`text-sm text-secondary mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('channels.bot_name')}
-                </p>
-                <p className={`text-xl font-bold text-foreground ${isRTL ? 'text-right' : 'text-left'}`}>{activeBot.name}</p>
-              </div>
-              <div>
-                <p className={`text-sm text-secondary mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('channels.status')}
-                </p>
-                <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-start'}`}>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <p className="text-xl font-bold text-green-600">
-                    {t('channels.connected')}
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-foreground text-start">
+                {t('channels.note')}
+              </h3>
             </div>
+            <p className="text-secondary text-sm leading-relaxed text-start">
+              {t('channels.note_text')}
+            </p>
           </motion.div>
-
-          {/* Bots List */}
-          <div>
-            <h2 className={`text-lg font-bold text-foreground mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t('channels.all_channels')}
-            </h2>
-            <div className="grid gap-4">
-              {bots.map((bot, idx) => {
-                const statusConfig = getStatusConfig(bot.status)
-                const StatusIcon = statusConfig.icon
-                return (
-                  <motion.div
-                    key={bot.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={`bg-white rounded-lg border-2 p-6 transition-all hover:shadow-md ${statusConfig.borderColor}`}
-                  >
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div className={`flex items-center gap-4 flex-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-sm">
-                          {bot.icon}
-                        </div>
-                        <div>
-                          <h3 className={`font-bold text-foreground mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>{bot.name}</h3>
-                          <p className={`text-sm text-secondary ${isRTL ? 'text-right' : 'text-left'}`}>{bot.platform}</p>
-                        </div>
-                      </div>
-                      <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${statusConfig.bgColor} ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <StatusIcon className={`w-5 h-5 ${statusConfig.color}`} />
-                          <span className={`font-medium text-sm ${statusConfig.color}`}>
-                            {statusConfig.label}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={bot.status === 'connected' ? (isRTL ? 'فصل' : 'Disconnect') : (isRTL ? 'اتصال' : 'Connect')}
-                        >
-                          {bot.status === 'connected' ? <Unlink className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
         </>
       )}
-
-      {/* Info Box */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mt-8 bg-primary/5 border border-primary/20 rounded-lg p-6"
-      >
-        <h3 className={`font-bold text-foreground mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t('channels.note')}
-        </h3>
-        <p className={`text-secondary text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t('channels.note_text')}
-        </p>
-      </motion.div>
-
-      {/* Add Channel Dialog */}
-      <Dialog open={showAddChannelDialog} onOpenChange={setShowAddChannelDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <Link2 className="w-5 h-5" />
-              {t('channels.add_channel')}
-            </DialogTitle>
-            <DialogDescription>
-              {isRTL ? 'اختر منصة للاتصال بها' : 'Choose a platform to connect'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="grid grid-cols-2 gap-3">
-              {platforms.map((platform) => (
-                <button
-                  key={platform.id}
-                  onClick={() => setSelectedPlatform(platform.id)}
-                  className={`p-4 rounded-lg border-2 transition-all ${selectedPlatform === platform.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                    }`}
-                >
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${platform.color} flex items-center justify-center text-white font-bold text-sm mx-auto mb-2`}>
-                    {platform.icon}
-                  </div>
-                  <p className="font-medium text-foreground text-sm text-center">{platform.name}</p>
-                </button>
-              ))}
-            </div>
-
-            {selectedPlatform && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 space-y-3"
-              >
-                <div>
-                  <label className={`text-sm font-medium ${isRTL ? 'text-right block' : ''}`}>
-                    {isRTL ? 'اسم القناة' : 'Channel Name'}
-                  </label>
-                  <Input
-                    placeholder={isRTL ? 'بوت الدعم الفني' : 'Support Bot'}
-                    className={`mt-1.5 ${isRTL ? 'text-right' : ''}`}
-                  />
-                </div>
-                <div>
-                  <label className={`text-sm font-medium ${isRTL ? 'text-right block' : ''}`}>
-                    {isRTL ? 'معرف الصفحة/الحساب' : 'Page/Account ID'}
-                  </label>
-                  <Input
-                    placeholder="123456789"
-                    className={`mt-1.5 ${isRTL ? 'text-right' : ''}`}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </div>
-          <DialogFooter className={isRTL ? 'flex-row-reverse' : ''}>
-            <Button variant="outline" onClick={() => {
-              setShowAddChannelDialog(false)
-              setSelectedPlatform(null)
-            }}>
-              {t('action.cancel')}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowAddChannelDialog(false)
-                setSelectedPlatform(null)
-              }}
-              disabled={!selectedPlatform}
-            >
-              {isRTL ? 'اتصال' : 'Connect'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   )
 }
